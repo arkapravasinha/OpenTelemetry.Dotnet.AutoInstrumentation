@@ -1,0 +1,23 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p> Check Weather Data</p>
+</div>
+
+<ul>
+    @if (Model.Forecasts != null && Model.Forecasts.Count > 0)
+    {
+        @foreach (var item in Model.Forecasts)
+        {
+            <li>
+                <p>Date: @item.Date | Temp: @item.TemperatureC</p>
+            </li>
+        }
+    }
+</ul>
+

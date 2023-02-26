@@ -1,0 +1,92 @@
+version: '3.4'
+
+services:
+  opentelemetry.dotnet.autoinstrumentation.client:
+    image: ${DOCKER_REGISTRY-}opentelemetrydotnetautoinstrumentationclient
+    build:
+      context: .
+      dockerfile: OpenTelemetry.Dotnet.AutoInstrumentation.Client/Dockerfile
+    env_file:
+        - otel-dotnet.env
+    environment:
+      # OpenTelemetry environmental variables:
+      OTEL_SERVICE_NAME: "opentelemetry.dotnet.autoinstrumentation.client"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+      WFServiceURL: "http://opentelemetry.dotnet.autoinstrumentation.service:80"
+    depends_on:
+      - opentelemetry.dotnet.autoinstrumentation.service
+      - otel-collector
+
+
+  opentelemetry.dotnet.autoinstrumentation.service:
+    image: ${DOCKER_REGISTRY-}opentelemetrydotnetautoinstrumentationservice
+    build:
+      context: .
+      dockerfile: OpenTelemetry.Dotnet.AutoInstrumentation.Service/Dockerfile
+    env_file:
+        - otel-dotnet.env
+    environment:
+      # OpenTelemetry environmental variables:
+      OTEL_SERVICE_NAME: "opentelemetry.dotnet.autoinstrumentation.service"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+      DB_CONNECTION: "Server=sqlserver,1433;User=sa;Password=yourStrong(!)Password;TrustServerCertificate=True;"
+    depends_on:
+      - sqlserver
+      - otel-collector
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-CU17-ubuntu-20.04
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=yourStrong(!)Password
+    ports:
+      - "1433:1433"
+
+  # OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.61.0
+    volumes:
+      - ./otel-config.yaml:/etc/otel/config.yaml
+      - ./log:/log/otel
+    command: --config /etc/otel/config.yaml
+    environment:
+      JAEGER_ENDPOINT: "jaeger:4317"
+      LOKI_ENDPOINT: "http://loki:3100/loki/api/v1/push"
+    ports:
+      - "8889:8889"   # Prometheus metrics exporter (scrape endpoint)
+      - "13133:13133" # health_check extension
+      - "55679:55679" # ZPages extension
+    depends_on:
+      - jaeger
+      - prometheus
+      - loki
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.38.1
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686" # Jaeger Web UI
+
+  prometheus:
+    image: prom/prometheus:v2.40.5
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  loki:
+    image: grafana/loki:2.7.1
+    ports:
+      - "3100:3100"
+
+  grafana:
+    image: grafana/grafana:9.3.2
+    volumes:
+      - ./grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+    ports:
+      - "3000:3000"
+

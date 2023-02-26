@@ -1,0 +1,21 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "LaunchBrowser",
+      "composeLaunchServiceName": "opentelemetry.dotnet.autoinstrumentation.client",
+      "composeLaunchUrl": "{Scheme}://localhost:{ServicePort}",
+      "serviceActions": {
+        "grafana": "StartWithoutDebugging",
+        "jaeger": "StartWithoutDebugging",
+        "loki": "StartWithoutDebugging",
+        "opentelemetry.dotnet.autoinstrumentation.client": "StartDebugging",
+        "opentelemetry.dotnet.autoinstrumentation.service": "StartDebugging",
+        "otel-collector": "StartWithoutDebugging",
+        "prometheus": "StartWithoutDebugging",
+        "sqlserver": "StartWithoutDebugging"
+      }
+    }
+  }
+}
